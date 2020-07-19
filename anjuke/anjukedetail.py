@@ -22,7 +22,7 @@ config = {
     "host": "127.0.0.1",
     "user": "root",
     "password": "123456",
-    "database": "reptile123123"
+    "database": "reptile"
 }
 db = pymysql.connect(**config)
 cursor = db.cursor()
