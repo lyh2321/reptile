@@ -22,12 +22,12 @@ config = {
     "host": "127.0.0.1",
     "user": "root",
     "password": "123456",
-    "database": "reptile"
+    "database": "windows"
 }
 db = pymysql.connect(**config)
 cursor = db.cursor()
 
-headers = open(r"/Users/lyh/Documents/headers.txt", 'r').readlines()
+headers = open(r"./headers.txt", 'r').readlines()
 
 
 def getHtml(url):
@@ -35,9 +35,15 @@ def getHtml(url):
         print(url)
         page = s.get(url=url, headers=getHeaders(), timeout=10)
         page.encoding = 'utf-8'
-        # print(page.status_code)
+        print(page.status_code)
         html = page.text
         doc = pq(html)
+
+        if(doc('title').text().find("验证")>-1):
+            print('等待验证')
+            time.sleep(5)
+            return getHtml(url)
+
         return doc
     except requests.exceptions.RequestException as e:
         print(e)
@@ -61,26 +67,29 @@ def gethasmore0(doc):
     list = []
     num = doc('.js-options-price>div').size()
     print(num)
-    # for i in range(0, num):
-    #     rule = '.hasmore:eq(0)>dd>a:eq(' + str(i) + ')'
-    #     value = doc(rule).attr("href")
-    #     value = value.replace('/ershoufang/', '').replace('/', '')
-    #     values = doc(rule).text()
-    #
-    #     list.append(value + ',' + values)
-    # return list
-
-
-# 面积
-def gethasmore1(doc):
-    list = []
-    num = doc('.hasmore:eq(1)>dd>a').size()
     for i in range(0, num):
-        rule = '.hasmore:eq(1)>dd>a:eq(' + str(i) + ')'
+        rule = '.hasmore:eq(0)>dd>a:eq(' + str(i) + ')'
         value = doc(rule).attr("href")
         value = value.replace('/ershoufang/', '').replace('/', '')
         values = doc(rule).text()
 
+        list.append(value + ',' + values)
+    return list
+
+
+# 区域
+def gethasmore1(doc):
+    list = []
+    num = doc('.js-region-list>div').size()
+    for i in range(1, num):
+        rule = '.js-region-list>div:eq(' + str(i) + ')'
+        values = doc(rule).text()
+        value =''
+        if(doc(rule).attr("data-id") is None):
+            value = doc(rule).attr("data-href")
+        else:
+            value =doc('#blockinfo-'+doc(rule).attr("data-id")+'>div:eq(0)>a').attr('href');
+        print(str(value) + ',' + str(values))
         list.append(value + ',' + values)
     return list
 
@@ -196,8 +205,8 @@ def run(obligate1, city):
     if doc == None:
         return None
 
-    list0 = gethasmore0(doc)
-    # list1 = gethasmore1(doc)
+    # list0 = gethasmore0(doc)
+    list1 = gethasmore1(doc)
 
     # for list in list0:
     #     vals0 = list.split(',')
@@ -237,9 +246,11 @@ def getNowd():
     return time.strftime("%Y%m%d%H%M%S", time.localtime())
 
 
-for num in range(0,10000):
-    go()
+# for num in range(0,10000):
+#     go()
 
+
+go()
 
 # schedule.every().day.at("00:01").do(go)
 
