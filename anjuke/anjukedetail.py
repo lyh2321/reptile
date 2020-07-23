@@ -22,7 +22,7 @@ config = {
     "host": "127.0.0.1",
     "user": "root",
     "password": "123456",
-    "database": "windows"
+    "database": "anjuke"
 }
 db = pymysql.connect(**config)
 cursor = db.cursor()
@@ -35,11 +35,11 @@ def getHtml(url):
         print(url)
         page = s.get(url=url, headers=getHeaders(), timeout=10)
         page.encoding = 'utf-8'
-        print(page.status_code)
+        # print(page.status_code)
         html = page.text
         doc = pq(html)
 
-        if(doc('title').text().find("验证")>-1):
+        if (doc('title').text().find("验证") > -1):
             print('等待验证')
             time.sleep(5)
             return getHtml(url)
@@ -57,23 +57,20 @@ def getHeaders():
     return h
 
 
-# 房子数量
-def gethousenum(doc):
-    return doc('.resultDes>h2>span').text().strip();
-
-
 # 售价
 def gethasmore0(doc):
     list = []
     num = doc('.js-options-price>div').size()
     print(num)
-    for i in range(0, num):
-        rule = '.hasmore:eq(0)>dd>a:eq(' + str(i) + ')'
+    for i in range(1, num):
+        rule = '.js-options-price>div:eq(' + str(i) + ')>a'
         value = doc(rule).attr("href")
-        value = value.replace('/ershoufang/', '').replace('/', '')
+        end_pos = value.rfind('/') - 1
+        start_pos = value.rfind('/', 0, end_pos)
+        filename = value[start_pos + 1:]
         values = doc(rule).text()
 
-        list.append(value + ',' + values)
+        list.append(filename + ',' + values)
     return list
 
 
@@ -84,78 +81,22 @@ def gethasmore1(doc):
     for i in range(1, num):
         rule = '.js-region-list>div:eq(' + str(i) + ')'
         values = doc(rule).text()
-        value =''
-        if(doc(rule).attr("data-id") is None):
+        value = ''
+        if (doc(rule).attr("data-id") is None):
             value = doc(rule).attr("data-href")
         else:
-            value =doc('#blockinfo-'+doc(rule).attr("data-id")+'>div:eq(0)>a').attr('href');
-        print(str(value) + ',' + str(values))
-        list.append(value + ',' + values)
+            value = doc('#blockinfo-' + doc(rule).attr("data-id") + '>div:eq(0)>a').attr('href');
+
+        end_pos = value.rfind('/') - 1
+        start_pos = value.rfind('/', 0, end_pos)
+        filename = value[start_pos + 1:]
+
+        list.append(filename + ',' + values)
     return list
 
 
-# 最大翻页数
-def getmaxpage(doc):
-    try:
-        value = doc('.house-lst-page-box').attr('page-data')
-        value = value[value.index(':') + 1:]
-        value = value[:value.index(',')]
-        return value
-    except:
-        return None
 
-
-def ljpage(pid, page, url, val):
-    doc = getHtml(url + 'pg' + str(page) + val + '/')
-    if doc == None:
-        return
-
-    num = doc('.sellListContent>li').size()
-
-    for i in range(0, num):
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>a').attr('href'))
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>a>.lj-lazy').attr("data-original"))
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>.title').text())
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>div>.totalPrice').text())
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>div>.unitPrice').text())
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>.address>.houseInfo').text())
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>.flood').text())
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>.followInfo').text())
-        # # print()
-
-
-        url = doc('.sellListContent>li:eq(' + str(i) + ')>a').attr('href')
-        image = doc('.sellListContent>li:eq(' + str(i) + ')>a>.lj-lazy').attr("data-original")
-        alt = doc('.sellListContent>li:eq(' + str(i) + ')>a>.lj-lazy').attr("alt")
-        name = doc('.sellListContent>li:eq(' + str(i) + ')>div>.title').text()
-        price = doc('.sellListContent>li:eq(' + str(i) + ')>div>div>.totalPrice').text()
-        unitPrice = doc('.sellListContent>li:eq(' + str(i) + ')>div>div>.unitPrice').text()
-        value = doc('.sellListContent>li:eq(' + str(i) + ')>div>.address>.houseInfo').text()
-        flood = doc('.sellListContent>li:eq(' + str(i) + ')>div>.flood').text()
-        followInfo = doc('.sellListContent>li:eq(' + str(i) + ')>div>.followInfo').text()
-
-        # print(url)
-        # print(image)
-        # print(alt)
-        # print(name)
-        # print(price)
-        # print(unitPrice)
-        # print(value)
-        # print(flood)
-        # print(followInfo)
-
-        vals = value.split('|')
-        fs = followInfo.split(' / ')
-
-        # print(value)
-        # print(len(vals))
-        # print(vals[4].strip() if len(vals) > 4 else '')
-        insertlianjiadetail(pid, name, url, image, vals[0].strip(), vals[1].strip(), vals[2].strip(), vals[3].strip(),
-                            vals[4].strip() if len(vals) > 4 else '',
-                            alt, flood, fs[0], fs[1], price, unitPrice)
-
-
-def insertlianjia(id, name, url, totalnumber, p, a):
+def insertcommunity(id, name, url, totalnumber, p, a):
     db.ping()
     sql = "insert into lianjia(id,name,url,totalnumber,p,a,ctdt,obligate1) values ('%s','%s','%s','%s','%s','%s','%s','%s');" % (
         id, name, url, totalnumber, p, a, getNow(), obligate1)
@@ -164,24 +105,23 @@ def insertlianjia(id, name, url, totalnumber, p, a):
     db.commit()
 
 
-def insertlianjiadetail(pid, name, url, image, xq, fx, dx, cx, zx, dz, lx, gz, sj, price, mqjg):
+def inserthousedetail(doc, url):
     db.ping()
-    sql = "insert into lianjiadetail(id,pid,name,url,image,`小区`,`房型`,`大小`,`朝向`,`装修`,`地址`,`楼形`,`关注人数`,`时间`,price,`每平价格`,obligate1,ctdt) values (UUID(),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % (
-        pid,
-        name.replace('\'', ' '),
-        url, image,
-        lx.replace('\'', ' '),
-        xq.replace('\'', ' '),
-        fx.replace('\'', ' '),
-        dx.replace('\'', ' '),
-        cx.replace('\'', ' '),
-        dz.replace('\'', ' '),
-        zx.replace('\'', ' '),
-        gz.replace('\'', ' '),
-        sj.replace('\'', ' '),
-        price.replace('\'', ' '),
-        mqjg.replace('\'', ' '),
-        obligate1, getNow())
+    sql = "insert into anjukedetail(id,name,url,image,`小区`,`房型`,`大小`,`朝向`,`装修`,`地址`,`楼形`,`时间`,price,`每平价格`,obligate1,ctdt) values (UUID(),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % (
+        doc('.house-address').text(),
+        url,
+        doc('#img-list>li:eq(0)>img').attr('src'),
+        doc('body > div.house-basic-info-wrap.content-wrap > ul > li:nth-child(11) > a').text().strip(),
+        doc('body > div.house-info-wrap > div > div.house-data > span:nth-child(3)').text().strip(),
+        doc('body > div.house-info-wrap > div > div.house-data > span.fr').text().strip(),
+        doc('body > div.house-basic-info-wrap.content-wrap > ul > li:nth-child(2)').text().replace("朝向", "").strip(),
+        doc('body > div.house-basic-info-wrap.content-wrap > ul > li:nth-child(4)').text().replace("装修", "", 1).strip(),
+        doc('.info-long-item:eq(1)').text().split("（")[1].replace("）","").strip(),
+        doc('body > div.house-basic-info-wrap.content-wrap > ul > li:nth-child(3)').text().replace("楼层", "").strip(),
+        doc('body > div.house-overview.content-wrap > div.top-title > div.title-right.release-date').text().strip(),
+        doc('body > div.house-info-wrap > div > div.house-data > span.fl').text().strip(),
+        doc('body > div.house-basic-info-wrap.content-wrap > ul > li:nth-child(1)').text().replace("单价", "").strip(),
+        str(obligate1), str(getNow()))
     print(sql)
     try:
         cursor.execute(sql)
@@ -197,45 +137,43 @@ def lianjiandict():
     return cursor.fetchall()
 
 
-def run(obligate1, city):
-    url = "https://m.anjuke.com/" + city + "/sale/all/"
+def housedetail(doc):
+    for i in range(0, doc('#searchHide>.list>a').length):
+        url = str(doc('#searchHide>.list>a:eq(' + str(i) + ')').attr('href')).split("?")[0]
+        housedetaildoc = getHtml(url)
+        if(not housedetaildoc is None):
+            inserthousedetail(housedetaildoc, url)
+            insertcommunity(housedetaildoc('.info-long-item:eq(1)>a').attr('href'))
+
+
+
+def run(city):
+    url = "https://m.anjuke.com/" + city + "/sale/"
 
     doc = getHtml(url)
-
     if doc == None:
         return None
 
-    # list0 = gethasmore0(doc)
+    list0 = gethasmore0(doc)
     list1 = gethasmore1(doc)
 
-    # for list in list0:
-    #     vals0 = list.split(',')
-    #     for list in list1:
-    #         vals1 = list.split(',')
-    #         doc01 = getHtml(url + vals0[0] + vals1[0] + '/')
-    #         housenum = -1
-    #         if doc01 != None:
-    #             housenum = gethousenum(doc01)
-    #
-    #         id = uuid.uuid4();
-    #
-    #         insertlianjia(id, vals0[1] + ',' + vals1[1],
-    #                       url + vals0[0] + vals1[0] + '/',
-    #                       housenum,
-    #                       vals0[0],
-    #                       vals1[0])
-    #
-    #         maxpage = getmaxpage(doc01)
-    #         if maxpage == None:
-    #             continue
-    #         for num in range(1, int(maxpage) + 1):
-    #             ljpage(id, num, url, vals0[0] + vals1[0])
+    for list in list0:
+        vals0 = list.split(',')
+        for list in list1:
+            vals1 = list.split(',')
+            urls = url + vals1[0] + vals0[0]
+            print(urls)
+            for page in range(1, 999999):
+                doc01 = getHtml(urls + '?page=' + str(page))
+                if (doc01('.searchHide>div>.noresult').text().find("暂无相关内容") > -1):
+                    break
+                housedetail(doc01)
 
 
 def go():
     global obligate1
     obligate1 = getNowd()
-    run(obligate1, 'sh')
+    run('sh')
 
 
 def getNow():
