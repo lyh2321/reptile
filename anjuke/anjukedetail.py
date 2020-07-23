@@ -18,6 +18,10 @@ s = requests.Session()
 s.mount('http://', HTTPAdapter(max_retries=3))
 s.mount('https://', HTTPAdapter(max_retries=3))
 
+proxies={
+    'http':'http://127.0.0.1:58591',
+}
+
 config = {
     "host": "127.0.0.1",
     "user": "root",
@@ -41,7 +45,7 @@ def getHtml(url):
 
         if (doc('title').text().find("验证") > -1):
             print('等待验证')
-            time.sleep(5)
+            time.sleep(300)
             return getHtml(url)
 
         return doc
@@ -95,28 +99,43 @@ def gethasmore1(doc):
     return list
 
 
-
-def insertcommunity(id, name, url, totalnumber, p, a):
+def insertcommunity(url):
     db.ping()
-    sql = "insert into lianjia(id,name,url,totalnumber,p,a,ctdt,obligate1) values ('%s','%s','%s','%s','%s','%s','%s','%s');" % (
-        id, name, url, totalnumber, p, a, getNow(), obligate1)
-    # print(sql)
+    sql = "select id from community where obligate1='%s' and url='%s' ;" % (obligate1, url)
+    print(sql)
     cursor.execute(sql)
-    db.commit()
+    if len(cursor.fetchall()) == 0:
+        doc = getHtml(url);
+        sql = "insert into community(id,name,url,price,`物业类型`,`物业费`,`竣工时间`,`绿化率`,`总户数`,`容积率`,`所属商圈`,ctdt,obligate1) values (UUID(),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % (
+            doc('body > div.container > div.price-mod > div.comm-tit > h1').text().strip(),
+            url,
+            doc('body > div.container > div.price-mod > div.price-infos-mod > a.item.main-item > div > p.price').text().strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(1)').text().replace("物业类型：","").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(2)').text().replace("物业费：","").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(3)').text().replace("竣工时间：","").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(4)').text().replace("绿化率：","").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(5)').text().replace("  ","").replace("总户数：","").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(6)').text().replace("容积率：", "").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(7)').text().replace("所属商圈：", "").strip(),
+            getNow(), obligate1)
+        print(sql)
+        cursor.execute(sql)
+        db.commit()
 
 
 def inserthousedetail(doc, url):
     db.ping()
-    sql = "insert into anjukedetail(id,name,url,image,`小区`,`房型`,`大小`,`朝向`,`装修`,`地址`,`楼形`,`时间`,price,`每平价格`,obligate1,ctdt) values (UUID(),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % (
+    sql = "insert into anjukedetail(id,name,url,image,`小区`,communityurl,`房型`,`大小`,`朝向`,`装修`,`地址`,`楼形`,`时间`,price,`每平价格`,obligate1,ctdt) values (UUID(),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % (
         doc('.house-address').text(),
         url,
         doc('#img-list>li:eq(0)>img').attr('src'),
-        doc('body > div.house-basic-info-wrap.content-wrap > ul > li:nth-child(11) > a').text().strip(),
+        doc('.info-long-item:eq(1)>a').text().strip(),
+        doc('.info-long-item:eq(1)>a').attr("href"),
         doc('body > div.house-info-wrap > div > div.house-data > span:nth-child(3)').text().strip(),
         doc('body > div.house-info-wrap > div > div.house-data > span.fr').text().strip(),
         doc('body > div.house-basic-info-wrap.content-wrap > ul > li:nth-child(2)').text().replace("朝向", "").strip(),
         doc('body > div.house-basic-info-wrap.content-wrap > ul > li:nth-child(4)').text().replace("装修", "", 1).strip(),
-        doc('.info-long-item:eq(1)').text().split("（")[1].replace("）","").strip(),
+        doc('.info-long-item:eq(1)').text().split("（")[1].replace("）", "").strip(),
         doc('body > div.house-basic-info-wrap.content-wrap > ul > li:nth-child(3)').text().replace("楼层", "").strip(),
         doc('body > div.house-overview.content-wrap > div.top-title > div.title-right.release-date').text().strip(),
         doc('body > div.house-info-wrap > div > div.house-data > span.fl').text().strip(),
@@ -141,10 +160,9 @@ def housedetail(doc):
     for i in range(0, doc('#searchHide>.list>a').length):
         url = str(doc('#searchHide>.list>a:eq(' + str(i) + ')').attr('href')).split("?")[0]
         housedetaildoc = getHtml(url)
-        if(not housedetaildoc is None):
+        if (not housedetaildoc is None):
             inserthousedetail(housedetaildoc, url)
             insertcommunity(housedetaildoc('.info-long-item:eq(1)>a').attr('href'))
-
 
 
 def run(city):
@@ -182,10 +200,6 @@ def getNow():
 
 def getNowd():
     return time.strftime("%Y%m%d%H%M%S", time.localtime())
-
-
-# for num in range(0,10000):
-#     go()
 
 
 go()
