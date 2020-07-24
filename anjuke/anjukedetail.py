@@ -1,23 +1,49 @@
 # 导入需要使用到的模块
 # coding=utf8
-import urllib.request
-import re
+
 import pymysql
-import os
 from pyquery import PyQuery as pq
-import time
-import requests
-import schedule
 from requests.adapters import HTTPAdapter
-import uuid
 import random
+import sys
+import time
+import hashlib
+import requests
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+_version = sys.version_info
+
+is_python3 = (_version[0] == 3)
+
+orderno = "ZF20207248658M9kMo5"
+secret = "f1d382adec694f84ae3f618eaf934b2e"
+
+ip = "forward.xdaili.cn"
+port = "80"
+
+ip_port = ip + ":" + port
+
+timestamp = str(int(time.time()))
+string = ""
+string = "orderno=" + orderno + "," + "secret=" + secret + "," + "timestamp=" + timestamp
+
+if is_python3:
+    string = string.encode()
+
+md5_string = hashlib.md5(string).hexdigest()
+sign = md5_string.upper()
+
+auth = "sign=" + sign + "&" + "orderno=" + orderno + "&" + "timestamp=" + timestamp
+
+proxy = {"http": "http://" + ip_port, "https": "https://" + ip_port}
+headers = {"Proxy-Authorization": auth,
+           "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.75 Safari/537.36"}
+
+# ------- 配置数据
 
 obligate1 = ''
 cityname = ''
-
-s = requests.Session()
-s.mount('http://', HTTPAdapter(max_retries=3))
-s.mount('https://', HTTPAdapter(max_retries=3))
 
 config = {
     "host": "127.0.0.1",
@@ -28,31 +54,37 @@ config = {
 db = pymysql.connect(**config)
 cursor = db.cursor()
 
-headers = open(r"./headers.txt", 'r').readlines()
-
 
 def getHtml(url):
     try:
         print(url)
-        page = s.get(url=url, headers=getHeaders(), timeout=10)
-        page.encoding = 'utf-8'
+        if (url.find("javascript:;") > -1):
+            print('javascript，跳过')
+            return None
+        # page = s.get(url=url, headers=getHeaders(), timeout=10)
+        # page.encoding = 'utf-8'
         # print(page.status_code)
-        html = page.text
+        r = requests.get(url, headers=headers, proxies=proxy, verify=False, allow_redirects=False)
+        r.encoding = 'utf8'
+        html = r.text
         doc = pq(html)
 
         if (doc('error-page').text().find("网页抓取工具访问安居客网站") > -1):
             print('等待ip切换')
-            time.sleep(300)
+            time.sleep(5)
             return getHtml(url)
 
         if (doc('title').text().find("验证") > -1):
             print('等待验证')
-            time.sleep(300)
+            time.sleep(5)
             return getHtml(url)
 
         return doc
     except requests.exceptions.RequestException as e:
         print(e)
+        print('错误等待')
+        time.sleep(5)
+        return getHtml(url)
     return None
 
 
