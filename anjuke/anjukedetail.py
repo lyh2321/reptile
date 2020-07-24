@@ -204,8 +204,12 @@ def housedetail(doc):
         url = str(doc('#searchHide>.list>a:eq(' + str(i) + ')').attr('href')).split("?")[0]
         housedetaildoc = getHtml(url)
         if (not housedetaildoc is None):
-            inserthousedetail(housedetaildoc, url)
-            insertcommunity(housedetaildoc('.info-long-item:eq(1)>a').attr('href'))
+            try:
+                inserthousedetail(housedetaildoc, url)
+                insertcommunity(housedetaildoc('.info-long-item:eq(1)>a').attr('href'))
+            except BaseException as e:
+                print(e)
+                print("错误跳过")
 
 
 def run():
@@ -261,7 +265,8 @@ def getNow():
 
 
 def getNowd():
-    return time.strftime("%Y%m%d%H%M%S", time.localtime())
+    # return time.strftime("%Y%m%d%H%M%S", time.localtime())
+    return time.strftime("%Y%m%d", time.localtime())
 
 
 go()
