@@ -13,14 +13,11 @@ import uuid
 import random
 
 obligate1 = ''
+cityname = ''
 
 s = requests.Session()
 s.mount('http://', HTTPAdapter(max_retries=3))
 s.mount('https://', HTTPAdapter(max_retries=3))
-
-proxies={
-    'http':'http://127.0.0.1:58591',
-}
 
 config = {
     "host": "127.0.0.1",
@@ -42,6 +39,11 @@ def getHtml(url):
         # print(page.status_code)
         html = page.text
         doc = pq(html)
+
+        if (doc('error-page').text().find("网页抓取工具访问安居客网站") > -1):
+            print('等待ip切换')
+            time.sleep(300)
+            return getHtml(url)
 
         if (doc('title').text().find("验证") > -1):
             print('等待验证')
@@ -101,22 +103,31 @@ def gethasmore1(doc):
 
 def insertcommunity(url):
     db.ping()
-    sql = "select id from community where obligate1='%s' and url='%s' ;" % (obligate1, url)
+    sql = "select id from t_community_" + cityname + " where obligate1='%s' and url='%s' ;" % (obligate1, url)
     print(sql)
     cursor.execute(sql)
     if len(cursor.fetchall()) == 0:
         doc = getHtml(url);
-        sql = "insert into community(id,name,url,price,`物业类型`,`物业费`,`竣工时间`,`绿化率`,`总户数`,`容积率`,`所属商圈`,ctdt,obligate1) values (UUID(),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % (
+        sql = "insert into t_community_" + cityname + "(id,name,url,price,`物业类型`,`物业费`,`竣工时间`,`绿化率`,`总户数`,`容积率`,`所属商圈`,ctdt,obligate1) values (UUID(),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % (
             doc('body > div.container > div.price-mod > div.comm-tit > h1').text().strip(),
             url,
-            doc('body > div.container > div.price-mod > div.price-infos-mod > a.item.main-item > div > p.price').text().strip(),
-            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(1)').text().replace("物业类型：","").strip(),
-            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(2)').text().replace("物业费：","").strip(),
-            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(3)').text().replace("竣工时间：","").strip(),
-            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(4)').text().replace("绿化率：","").strip(),
-            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(5)').text().replace("  ","").replace("总户数：","").strip(),
-            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(6)').text().replace("容积率：", "").strip(),
-            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(7)').text().replace("所属商圈：", "").strip(),
+            doc(
+                'body > div.container > div.price-mod > div.price-infos-mod > a.item.main-item > div > p.price').text().strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(1)').text().replace("物业类型：",
+                                                                                                               "").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(2)').text().replace("物业费：",
+                                                                                                               "").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(3)').text().replace("竣工时间：",
+                                                                                                               "").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(4)').text().replace("绿化率：",
+                                                                                                               "").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(5)').text().replace("  ",
+                                                                                                               "").replace(
+                "总户数：", "").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(6)').text().replace("容积率：",
+                                                                                                               "").strip(),
+            doc('body > div.container > div.comm-mod.comm-brief-mod > div > span:nth-child(7)').text().replace("所属商圈：",
+                                                                                                               "").strip(),
             getNow(), obligate1)
         print(sql)
         cursor.execute(sql)
@@ -125,7 +136,7 @@ def insertcommunity(url):
 
 def inserthousedetail(doc, url):
     db.ping()
-    sql = "insert into anjukedetail(id,name,url,image,`小区`,communityurl,`房型`,`大小`,`朝向`,`装修`,`地址`,`楼形`,`时间`,price,`每平价格`,obligate1,ctdt) values (UUID(),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % (
+    sql = "insert into t_anjukedetail_" + cityname + "(id,name,url,image,`小区`,communityurl,`房型`,`大小`,`朝向`,`装修`,`地址`,`楼形`,`时间`,price,`每平价格`,obligate1,ctdt) values (UUID(),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % (
         doc('.house-address').text(),
         url,
         doc('#img-list>li:eq(0)>img').attr('src'),
@@ -165,12 +176,14 @@ def housedetail(doc):
             insertcommunity(housedetaildoc('.info-long-item:eq(1)>a').attr('href'))
 
 
-def run(city):
-    url = "https://m.anjuke.com/" + city + "/sale/"
+def run():
+    url = "https://m.anjuke.com/" + cityname + "/sale/"
 
     doc = getHtml(url)
     if doc == None:
         return None
+
+    createtable(cityname)
 
     list0 = gethasmore0(doc)
     list1 = gethasmore1(doc)
@@ -188,10 +201,27 @@ def run(city):
                 housedetail(doc01)
 
 
+def createtable(cityname):
+    db.ping()
+    try:
+        cursor.execute("create table t_anjukedetail_" + cityname + " select * from anjukedetail where id='1'")
+        db.commit()
+    except BaseException:
+        print('')
+    db.ping()
+    try:
+        cursor.execute("create table t_community_" + cityname + " select * from community where id='1'")
+        db.commit()
+    except BaseException:
+        print('')
+
+
 def go():
     global obligate1
     obligate1 = getNowd()
-    run('sh')
+    global cityname
+    cityname = 'sh'
+    run()
 
 
 def getNow():
