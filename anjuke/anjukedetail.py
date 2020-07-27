@@ -80,7 +80,7 @@ def getHtml(url):
             return getHtml(url)
 
         return doc
-    except requests.exceptions.RequestException as e:
+    except BaseException as e:
         print(e)
         print('错误等待')
         time.sleep(5)
@@ -230,9 +230,9 @@ def run():
             vals1 = list.split(',')
             urls = url + vals1[0] + vals0[0]
             print(urls)
-            for page in range(1, 999999):
+            for page in range(1, 200):
                 doc01 = getHtml(urls + '?page=' + str(page))
-                if (doc01('.searchHide>div>.noresult').text().find("暂无相关内容") > -1):
+                if (doc01('.noresult').text().find("暂无相关内容") > -1):
                     break
                 housedetail(doc01)
 
