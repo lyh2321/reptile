@@ -10,6 +10,8 @@ import time
 import hashlib
 import requests
 import urllib3
+import traceback
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 _version = sys.version_info
@@ -207,8 +209,8 @@ def housedetail(doc):
             try:
                 inserthousedetail(housedetaildoc, url)
                 insertcommunity(housedetaildoc('.info-long-item:eq(1)>a').attr('href'))
-            except BaseException as e:
-                print(e)
+            except BaseException:
+                traceback.print_exc()
                 print("错误跳过")
 
 
@@ -230,11 +232,15 @@ def run():
             vals1 = list.split(',')
             urls = url + vals1[0] + vals0[0]
             print(urls)
-            for page in range(1, 200):
-                doc01 = getHtml(urls + '?page=' + str(page))
-                if (doc01('.noresult').text().find("暂无相关内容") > -1):
-                    break
-                housedetail(doc01)
+            for page in range(1, 60):
+                url(urls + '?page=' + str(page))
+
+
+def gethouse(url):
+    doc01 = getHtml(url)
+    if (doc01('.noresult').text().find("暂无相关内容") > -1):
+        return
+    housedetail(doc01)
 
 
 def createtable(cityname):
@@ -269,7 +275,31 @@ def getNowd():
     return time.strftime("%Y%m%d", time.localtime())
 
 
-go()
+# go()
+
+if __name__ == "__main__":
+    obligate1 = getNowd()
+    cityname = 'sh'
+
+    process_pool = ProcessPoolExecutor(2)  # 定义5个进程
+    url = "https://m.anjuke.com/" + cityname + "/sale/"
+
+    doc = getHtml(url)
+
+
+    createtable(cityname)
+
+    list0 = gethasmore0(doc)
+    list1 = gethasmore1(doc)
+
+    for list in list0:
+        vals0 = list.split(',')
+        for list in list1:
+            vals1 = list.split(',')
+            urls = url + vals1[0] + vals0[0]
+            print(urls)
+            for page in range(1, 60):
+                process_pool.submit(gethouse, (urls + '?page=' + str(page)))
 
 # schedule.every().day.at("00:01").do(go)
 
