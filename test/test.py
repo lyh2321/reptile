@@ -1,38 +1,14 @@
-import requests
-from requests.adapters import HTTPAdapter
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor  # 线程池，进程池
+import threading, time
 
 
-obligate1 = ''
-
-requests.packages.urllib3.disable_warnings()
-s = requests.Session()
-s.mount('http://', HTTPAdapter(max_retries=3))
-s.mount('https://', HTTPAdapter(max_retries=3))
-
-headers = {
-    'User-Agent': "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
-}
-
-def getHtmlProxy(url, ip):
-    print(url)
-    proxy = {
-        'http': ip,
-        'https': ip
-    }
-    # print(proxy)
-    try:
-        page = s.get(url=url, headers=headers, timeout=30, proxies=proxy, verify=False)
-        page.encoding = 'utf-8'
-        print(page.status_code)
-        if page.status_code != 200:
-            return None
-        html = page.text
-
-        # doc = pq(html)
-        return html
-    except requests.exceptions.RequestException as e:
-        print(e)
-    return None
+def test(arg):
+    print(arg, threading.current_thread().name)
+    time.sleep(1)
 
 
-print(getHtmlProxy("https://httpbin.org/ip", '113.194.134.24:9999'))
+if __name__ == "__main__":
+    thread_pool = ThreadPoolExecutor(5)  # 定义5个线程执行此任务
+    process_pool = ProcessPoolExecutor(5)  # 定义5个进程
+    for i in range(20):
+        thread_pool.submit(test, i)

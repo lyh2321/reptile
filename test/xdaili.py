@@ -34,7 +34,7 @@ auth = "sign=" + sign + "&" + "orderno=" + orderno + "&" + "timestamp=" + timest
 #print(auth)
 proxy = {"http": "http://" + ip_port, "https": "https://" + ip_port}
 headers = {"Proxy-Authorization": auth, "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.75 Safari/537.36"}
-r = requests.get("https://httpbin.org/ip", headers=headers, proxies=proxy, verify=False,allow_redirects=False)
+r = requests.get("https://m.anjuke.com/sh/sale/jingan/m2/?page=100", headers=headers, proxies=proxy, verify=False,allow_redirects=False)
 r.encoding='utf8'
 print(r.status_code)
 print(r.text)
