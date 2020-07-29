@@ -9,6 +9,7 @@ import requests
 import schedule
 from requests.adapters import HTTPAdapter
 import uuid
+import traceback
 
 obligate1 = ''
 
@@ -36,11 +37,12 @@ def getHtml(url):
         print(url)
         page = s.get(url=url, headers=headers, timeout=10)
         page.encoding = 'utf-8'
-        # print(page.status_code)
+        print(page.status_code)
         html = page.text
         doc = pq(html)
         return doc
     except requests.exceptions.RequestException as e:
+        traceback.print_exc()
         print(e)
     return None
 
