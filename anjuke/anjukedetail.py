@@ -18,7 +18,7 @@ _version = sys.version_info
 
 is_python3 = (_version[0] == 3)
 
-orderno = "ZF20207248658M9kMo5"
+orderno = "ZF20207307423uShoW7"
 secret = "f1d382adec694f84ae3f618eaf934b2e"
 
 ip = "forward.xdaili.cn"
@@ -137,7 +137,7 @@ def gethasmore1(doc):
 
 def insertcommunity(url):
     db.ping()
-    sql = "select id from t_community_" + cityname + " where obligate1='%s' and url='%s' ;" % (obligate1, url)
+    sql = "select id from t_community_" + cityname + " where  url='%s' ;" % (url)
     print(sql)
     cursor.execute(sql)
     if len(cursor.fetchall()) == 0:
@@ -204,14 +204,21 @@ def lianjiandict():
 def housedetail(doc):
     for i in range(0, doc('#searchHide>.list>a').length):
         url = str(doc('#searchHide>.list>a:eq(' + str(i) + ')').attr('href')).split("?")[0]
-        housedetaildoc = getHtml(url)
-        if (not housedetaildoc is None):
-            try:
-                inserthousedetail(housedetaildoc, url)
-                insertcommunity(housedetaildoc('.info-long-item:eq(1)>a').attr('href'))
-            except BaseException:
-                traceback.print_exc()
-                print("错误跳过")
+        db.ping()
+        sql = "select id from t_anjukedetail_" + cityname + " where  url='%s' ;" % (url)
+        print(sql)
+        cursor.execute(sql)
+        if len(cursor.fetchall()) == 0:
+            housedetaildoc = getHtml(url)
+            if (not housedetaildoc is None):
+                try:
+                    inserthousedetail(housedetaildoc, url)
+                    insertcommunity(housedetaildoc('.info-long-item:eq(1)>a').attr('href'))
+                except BaseException:
+                    traceback.print_exc()
+                    print("错误跳过")
+        else:
+            print("存在跳过")
 
 
 def run():
@@ -285,7 +292,6 @@ if __name__ == "__main__":
     url = "https://m.anjuke.com/" + cityname + "/sale/"
 
     doc = getHtml(url)
-
 
     createtable(cityname)
 
