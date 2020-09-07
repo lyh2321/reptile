@@ -99,16 +99,6 @@ def ljpage(pid, page, url, val):
     num = doc('.sellListContent>li').size()
 
     for i in range(0, num):
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>a').attr('href'))
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>a>.lj-lazy').attr("data-original"))
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>.title').text())
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>div>.totalPrice').text())
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>div>.unitPrice').text())
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>.address>.houseInfo').text())
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>.flood').text())
-        # # print(doc('.sellListContent>li:eq(' + str(i) + ')>div>.followInfo').text())
-        # # print()
-
         url = doc('.sellListContent>li:eq(' + str(i) + ')>a').attr('href')
         image = doc('.sellListContent>li:eq(' + str(i) + ')>a>.lj-lazy').attr("data-original")
         alt = doc('.sellListContent>li:eq(' + str(i) + ')>a>.lj-lazy').attr("alt")
@@ -119,22 +109,9 @@ def ljpage(pid, page, url, val):
         flood = doc('.sellListContent>li:eq(' + str(i) + ')>div>.flood').text()
         followInfo = doc('.sellListContent>li:eq(' + str(i) + ')>div>.followInfo').text()
 
-        # print(url)
-        # print(image)
-        # print(alt)
-        # print(name)
-        # print(price)
-        # print(unitPrice)
-        # print(value)
-        # print(flood)
-        # print(followInfo)
-
         vals = value.split('|')
         fs = followInfo.split(' / ')
 
-        # print(value)
-        # print(len(vals))
-        # print(vals[4].strip() if len(vals) > 4 else '')
         insertlianjiadetail(pid, name, url, image, vals[0].strip(), vals[1].strip(), vals[2].strip(), vals[3].strip(),
                             vals[4].strip() if len(vals) > 4 else '',
                             alt, flood, fs[0], fs[1], price, unitPrice)
