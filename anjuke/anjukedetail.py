@@ -297,6 +297,7 @@ if __name__ == "__main__":
 
     list0 = gethasmore0(doc)
     list1 = gethasmore1(doc)
+    list0.reverse()
 
     for list in list0:
         vals0 = list.split(',')
