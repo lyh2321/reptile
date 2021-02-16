@@ -5,7 +5,8 @@ import pymysql
 import time
 
 config = {
-    "host": "172.20.0.26",
+    # "host": "172.20.0.26",
+    "host": "127.0.0.1",
     "user": "root",
     "password": "123456",
     "database": "ahgb"
@@ -46,7 +47,8 @@ def createimg(name, score, number, imgname):
     img_pil = Image.fromarray(bk_img)
     draw = ImageDraw.Draw(img_pil)
     text = '#position<230,94>#color<0,0,0>#font<34>#typeface<方正隶书简体>#<name>#position<238,#nameleft>#color<0,0,0>#font<26>#typeface<思远黑体>同志：#position<286,574>#color<0,0,0>#font<26>#typeface<方正楷体简体>#<score>#position<430,90>#color<0,0,0>#font<16>#typeface<方正楷体简体>编号：#<number>'
-    text = text.replace('#<name>', name).replace('#<number>', number).replace('#<score>', score).replace("\r|\n", "")
+    text = text.replace('#<name>', str(name)).replace('#<number>', str(number)).replace('#<score>', str(score)).replace(
+        "\r|\n", "")
     if name.find(' ') == -1:
         text = text.replace("#nameleft", str(90 + 34 * len(name) + 10))
     else:
@@ -65,8 +67,9 @@ def credits():
 
 def saveCertificateUser(boundary, createusername, createuserinfo, img, identifier, pid):
     db.ping()
-    sql = "insert into `t_cf_certificateuser` ( `id`, `boundary`, `createusername`, `createuserinfo`, `status`, `certificateid`, `ctdt`, `imgpath`, `name`, `pid`, `userid`, `username`, `identifier`) values ( UUID(),'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % \
-          (boundary, createusername, createuserinfo, 0, identifier, getNow(), img, pid,createuserinfo,createusername,identifier)
+    sql = "insert into `t_cf_certificateuser` ( `id`, `boundary`, `createusername`, `createuserinfo`, `status`, `certificateid`, `ctdt`, `imgpath`, `name`, `pid`, `userid`, `username`, `identifier`) values ( '%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s');" % \
+          (identifier, boundary, createusername, createuserinfo, 0, '2020jyzs', getNow(), '2020年全省干部网络培训结业证书', img, pid,
+           createuserinfo, createusername, identifier)
     try:
         cursor.execute(sql)
         db.commit()
@@ -78,10 +81,13 @@ def getNow():
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
 
-num = 0
+num = 1
 for credit in credits():
-    identifier = "2020" + credit['boundary'][0:7] + str(num)
-    createimg(credit['createusername'], credit['credithour'], identifier, credit['id'])
-    saveCertificateUser(credit['boundary'], credit['createusername'], credit['userinfoid'], credit['id'], identifier,
-                        credit['id'])
+    print(num)
+    identifier = str("2020") + str(credit[4][0:7]) + ((7 - len(str(num))) * str('0')) + str(num)
+    createimg(credit[1], credit[2], identifier, credit[0])
+    saveCertificateUser(str(credit[4]), str(credit[1]), str(credit[3]), str(credit[0]), str(identifier),
+                        str(credit[0]))
+    if num % 5000 == 0:
+        print()
     num = num + 1
