@@ -1,4 +1,5 @@
 import pymysql
+import pymongo
 from pyquery import PyQuery as pq
 import requests
 from requests.adapters import HTTPAdapter
@@ -14,13 +15,21 @@ headers = {
 }
 
 config = {
-    "host": "192.168.10.146",
+    # "host": "172.20.0.26",
+    "host": "127.0.0.1",
     "user": "root",
     "password": "123456",
-    "database": "fund"
+    "database": "ahgb"
 }
 db = pymysql.connect(**config)
 cursor = db.cursor()
+
+myclient = pymongo.MongoClient("mongodb://172.20.0.30:20000/")
+mydb = myclient["ahgb"]
+
+
+def getMongo(title, finds):
+    return mydb[title].find({}, finds)
 
 
 def getHtml(url):
@@ -38,7 +47,7 @@ def getHtml(url):
     return None
 
 
-def savesql(sql):
+def saveSql(sql):
     db.ping()
     print(sql)
     try:
@@ -48,7 +57,7 @@ def savesql(sql):
         print('error sql : ' + sql)
 
 
-def getsql(sql):
+def getSql(sql):
     db.ping()
     cursor.execute(sql)
     return cursor.fetchall()
